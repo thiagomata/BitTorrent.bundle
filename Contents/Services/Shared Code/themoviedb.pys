@@ -48,7 +48,10 @@ def MediaObjectsForURL(url, play_func):
 			release_item_magnet = release_item.xpath('./td[2]/a/@href')[0]
 
 			media_object = MediaObject()
+			media_object.audio_channels   = 2
+			media_object.audio_codec      = 'ac3' if '720p' in release else 'mp3'
 			media_object.video_resolution = 720 if '720p' in release else 480
+			media_object.video_codec      = 'h264' if 'x264' in release else 'xvid'
 			media_object.add(PartObject(key=Callback(play_func, url=release_item_url, magnet=release_item_magnet)))
 			media_objects.append(media_object)
 		except:
