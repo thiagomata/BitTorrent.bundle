@@ -1,6 +1,6 @@
 ################################################################################
 PREDB        = 'http://predb.me'
-PREDB_SEARCH = PREDB + '/?search=title%3A{0}+season%3A{1}+episode%3A{2}+tags%3Aaired%2C-foreign&page={3}'
+PREDB_SEARCH = PREDB + '/?search=title%3A{0}+season%3A{1}+episode%3A{2}+tags%3Aaired%2C-foreign%2C-internal&page={3}'
 
 ################################################################################
 def get_tvshow_releases(title, season_index, episode_index):

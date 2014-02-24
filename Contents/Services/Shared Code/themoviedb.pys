@@ -42,14 +42,20 @@ def MediaObjectsForURL(url, play_func):
 		tpb_search_url  = thepiratebay.THEPIRATEBAY_SEARCH.format(String.Quote(release))
 		tpb_search_html = HTML.ElementFromURL(tpb_search_url, cacheTime=CACHE_1DAY)
 
-		release_item        = tpb_search_html.xpath('//*[@id="searchResult"]/tr')[0]
-		release_item_url    = thepiratebay.THEPIRATEBAY + release_item.xpath('./td[2]/div/a/@href')[0]
-		release_item_magnet = release_item.xpath('./td[2]/a/@href')[0]
+		try:
+			release_item        = tpb_search_html.xpath('//*[@id="searchResult"]/tr')[0]
+			release_item_url    = thepiratebay.THEPIRATEBAY + release_item.xpath('./td[2]/div/a/@href')[0]
+			release_item_magnet = release_item.xpath('./td[2]/a/@href')[0]
 
-		media_object = MediaObject()
-		media_object.video_resolution = 720 if '720p' in release else 480
-		media_object.add(PartObject(key=Callback(play_func, url=release_item_url, magnet=release_item_magnet)))
-		media_objects.append(media_object)
+			media_object = MediaObject()
+			media_object.video_resolution = 720 if '720p' in release else 480
+			media_object.add(PartObject(key=Callback(play_func, url=release_item_url, magnet=release_item_magnet)))
+			media_objects.append(media_object)
+		except:
+			pass
+
+	if not media_objects:
+		raise Ex.MediaNotAvailable
 
 	media_objects.sort(key=lambda obj: obj.video_resolution, reverse=True)
 	return media_objects
