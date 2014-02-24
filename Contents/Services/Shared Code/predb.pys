@@ -1,0 +1,36 @@
+################################################################################
+PREDB        = 'http://predb.me'
+PREDB_SEARCH = PREDB + '/?search=title%3A{0}+season%3A{1}+episode%3A{2}+tags%3Aaired%2C-foreign&page={3}'
+
+################################################################################
+def get_tvshow_releases(title, season_index, episode_index):
+	title = title.replace(' ', '-').lower()
+
+	html_url  = PREDB_SEARCH.format(title.replace(' ', '-').lower(), season_index, episode_index, 1)
+	html_data = HTML.ElementFromURL(html_url, cacheTime=CACHE_1DAY)
+
+	releases = []
+	for item in html_data.xpath('//*[@class="p-c p-c-title"]'):
+		if item.xpath('./span[@class="tb tb-nuked"]'):
+			continue;
+		item_name = item.xpath('./h2/a/text()')[0]
+		Log.Info('[BitTorrent][predb] Found release: {0}'.format(item_name))
+		releases.append(item_name)
+
+	try:
+		page_count = int(html_data.xpath('//a[@class="page-button load-more"]/@data')[0])
+	except:
+		page_count = 1
+
+	for i in range(2, page_count + 1):
+		html_url  = PREDB_SEARCH.format(title.replace(' ', '-').lower(), season_index, episode_index, i)
+		html_data = HTML.ElementFromURL(html_url, cacheTime=CACHE_1DAY)
+
+		for item in html_data.xpath('//*[@class="p-c p-c-title"]/h2/a/text()'):
+			if item.xpath('./span[@class="tb tb-nuked"]'):
+				continue;
+			item_name = item.xpath('./h2/a/text()')[0]
+			Log.Info('[BitTorrent][predb] Found release: {0}'.format(item_name))
+			releases.append(item_name)
+
+	return releases

@@ -1,6 +1,7 @@
 ################################################################################
 import kickasstorrents
 import thepiratebay
+import themoviedb
 import torrent2http
 import yts
 
@@ -8,7 +9,9 @@ import yts
 def MetadataObjectForURL(url):
 	metadata_object = None
 
-	if url.startswith(kickasstorrents.KICKASSTORRENTS):
+	if url.startswith(themoviedb.THEMOVIEDB):
+		metadata_object = themoviedb.MetadataObjectForURL(url)
+	elif url.startswith(kickasstorrents.KICKASSTORRENTS):
 		metadata_object = kickasstorrents.MetadataObjectForURL(url)
 	elif url.startswith(thepiratebay.THEPIRATEBAY):
 		metadata_object = thepiratebay.MetadataObjectForURL(url)
@@ -24,7 +27,9 @@ def MetadataObjectForURL(url):
 ################################################################################
 @deferred
 def MediaObjectsForURL(url):
-	if url.startswith(kickasstorrents.KICKASSTORRENTS):
+	if url.startswith(themoviedb.THEMOVIEDB):
+		return themoviedb.MediaObjectsForURL(url, play_torrent)
+	elif url.startswith(kickasstorrents.KICKASSTORRENTS):
 		return kickasstorrents.MediaObjectsForURL(url, play_torrent)
 	elif url.startswith(thepiratebay.THEPIRATEBAY):
 		return thepiratebay.MediaObjectsForURL(url, play_torrent)

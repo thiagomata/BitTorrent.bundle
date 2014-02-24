@@ -1,2 +1,6 @@
 ################################################################################
 PREFIX = '/video/bittorrent'
+
+TITLE  = 'BitTorrent'
+ART    = 'art-default.jpg'
+ICON   = 'icon-default.png'
