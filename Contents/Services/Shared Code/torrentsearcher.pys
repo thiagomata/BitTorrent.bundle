@@ -1,0 +1,126 @@
+class Torrent:
+	def __init__(self, title, url, magnet, seeders, leechers):
+		self.title     = title
+		self.url       = url
+		self.magnet    = magnet
+		self.info_hash = Regex('.*xt=urn:btih:((\d|[a-z]|[A-Z])+)').match(self.magnet).group(1)
+		self.seeders   = seeders
+		self.leechers  = leechers
+	
+	def add_peers(self, seeders, leechers):
+		self.seeders  = self.seeders  + seeders
+		self.leechers = self.leechers + leechers
+
+class TorrentProvider:
+	def search(self, query):
+		pass
+
+class BitSnoopProvider(TorrentProvider):
+	name = 'BitSnoop'
+	def search(self, query):
+		torrents = []
+
+		try:
+			search_url = 'http://bitsnoop.com/search/video/{0}/s/d/?fmt=rss'.format(String.Quote(query))
+			search_rss = RSS.FeedFromURL(search_url, cacheTime=CACHE_1HOUR)
+			for item in search_rss.entries:
+				item_title    = item.title
+				item_url      = item.link
+				item_seeders  = int(item.numseeders)
+				item_leechers = int(item.numleechers)
+				item_magnet   = item.magneturi
+				torrents.append(Torrent(item_title, item_url, item_magnet, item_seeders, item_leechers))
+		except:
+			pass
+
+		return torrents
+
+class KickassTorrentsProvider(TorrentProvider):
+	name = 'Kickass Torrents'
+	def search(self, query):
+		torrents = []
+
+		try:
+			search_url = 'http://kickass.to/usearch/{0}/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query))
+			search_rss = RSS.FeedFromURL(search_url, cacheTime=0)
+			for item in search_rss.entries:
+				item_title    = item.title
+				item_url      = item.link
+				item_seeders  = int(item.torrent_seeds)
+				item_leechers = int(item.torrent_peers)
+				item_magnet   = item.torrent_magneturi
+				torrents.append(Torrent(item_title, item_url, item_magnet, item_seeders, item_leechers))
+		except:
+			pass
+
+		return torrents
+
+class ThePirateBayProvider(TorrentProvider):
+	name = 'The Pirate Bay'
+	def search(self, query):
+		torrents = []
+
+		try:
+			search_url  = 'http://thepiratebay.se/search/{0}/0/7/200'.format(String.Quote(query))
+			search_html = HTML.ElementFromURL(search_url, cacheTime=CACHE_1HOUR)
+			for item in search_html.xpath('//*[@id="searchResult"]/tr'):
+				item_title    = item.xpath('./td[2]/div/a/text()')[0]
+				item_url      = 'http://thepiratebay.se' + item.xpath('./td[2]/div/a/@href')[0]
+				item_seeders  = int(item.xpath('./td[3]/text()')[0])
+				item_leechers = int(item.xpath('./td[4]/text()')[0])
+				item_magnet   = item.xpath('./td[2]/a/@href')[0]
+				torrents.append(Torrent(item_title, item_url, item_magnet, item_seeders, item_leechers))
+		except:
+			pass
+
+		return torrents
+
+class TorrentSearcher:
+	def search(self, query):
+		torrent_providers = []
+		torrent_providers.append(BitSnoopProvider())
+		torrent_providers.append(KickassTorrentsProvider())
+		torrent_providers.append(ThePirateBayProvider())
+
+		torrents = []
+		for torrent_provider in torrent_providers:
+			results = torrent_provider.search(query)
+			for result in results:
+				Log.Info('[{0}] Found ({1}/{2}) {3} {4}'.format(torrent_provider.name, result.seeders, result.leechers, result.title, result.info_hash))
+				
+				is_unique = True
+				for torrent in torrents:
+					if result.info_hash.lower() == torrent.info_hash.lower():
+						torrent.add_peers(result.seeders, result.leechers)
+						is_unique = False
+						break
+
+				if is_unique:
+					torrents.append(result)
+					Log.Info('[Unique] Found ({0}/{1}) {2} {3}'.format(result.seeders, result.leechers, result.title, result.info_hash))
+
+		torrents.sort(key=lambda obj: obj.seeders, reverse=True)
+		for torrent in torrents:
+			Log.Info('[BEFORE_FILTERS] Found ({0}/{1}) {2} {3}'.format(torrent.seeders, torrent.leechers, torrent.title, torrent.info_hash))
+
+		torrents = self.filter_exclusions(torrents)
+		for torrent in torrents:
+			Log.Info('[FINAL] Found ({0}/{1}) {2} {3}'.format(torrent.seeders, torrent.leechers, torrent.title, torrent.info_hash))
+
+		return torrents
+
+
+	def filter_exclusions(self, torrents):
+		exclusions = ['FRENCH', 'VOSTFR', 'SweSub', 'DSR']
+		
+		result = []
+		for torrent in torrents:
+			keep = True
+			for exclusion in exclusions:
+				if exclusion in torrent.title:
+					keep = False
+					break
+			if keep:
+				result.append(torrent)
+
+		return result
