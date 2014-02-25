@@ -111,7 +111,7 @@ class TorrentSearcher:
 
 
 	def filter_exclusions(self, torrents):
-		exclusions = ['FRENCH', 'VOSTFR', 'SweSub', 'DSR']
+		exclusions = ['FRENCH', 'VOSTFR', 'SweSub']
 		
 		result = []
 		for torrent in torrents:

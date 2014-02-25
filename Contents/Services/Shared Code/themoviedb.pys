@@ -36,43 +36,25 @@ def MediaObjectsForURL(url, play_func):
 	season_index  = int(match_result.group(2))
 	episode_index = int(match_result.group(3))
 
-	releases = predb.get_tvshow_releases(show_name, season_index, episode_index)
+	#releases = predb.get_tvshow_releases(show_name, season_index, episode_index)
 
 	media_objects = []
-	for release in releases:
-		torrents = torrentsearcher.TorrentSearcher().search(release)
+	torrents = torrentsearcher.TorrentSearcher().search('%s S%02dE%02d' % (show_name, season_index, episode_index))
+	Log.Info('Found {0} torrents'.format(len(torrents)))
 
-		try:
-			torrent = torrents[0] 
+	try:
+		torrent = torrents[0] 
 
-			media_object = MediaObject()
-			media_object.audio_channels   = 2
-			media_object.audio_codec      = 'ac3' if '720p' in release else 'mp3'
-			media_object.video_resolution = 720 if '720p' in release else 480
-			media_object.video_codec      = 'h264' if 'x264' in release else 'xvid'
-			media_object.add(PartObject(key=Callback(play_func, url=torrent.url, magnet=torrent.magnet)))
-			media_objects.append(media_object)
-		except:
-			pass
-
-
-		# tpb_search_url  = thepiratebay.THEPIRATEBAY_SEARCH.format(String.Quote(release))
-		# tpb_search_html = HTML.ElementFromURL(tpb_search_url, cacheTime=CACHE_1DAY)
-
-		# try:
-		# 	release_item        = tpb_search_html.xpath('//*[@id="searchResult"]/tr')[0]
-		# 	release_item_url    = thepiratebay.THEPIRATEBAY + release_item.xpath('./td[2]/div/a/@href')[0]
-		# 	release_item_magnet = release_item.xpath('./td[2]/a/@href')[0]
-
-		# 	media_object = MediaObject()
-		# 	media_object.audio_channels   = 2
-		# 	media_object.audio_codec      = 'ac3' if '720p' in release else 'mp3'
-		# 	media_object.video_resolution = 720 if '720p' in release else 480
-		# 	media_object.video_codec      = 'h264' if 'x264' in release else 'xvid'
-		# 	media_object.add(PartObject(key=Callback(play_func, url=release_item_url, magnet=release_item_magnet)))
-		# 	media_objects.append(media_object)
-		# except:
-		# 	pass
+		media_object = MediaObject()
+		media_object.audio_channels   = 2
+		media_object.audio_codec      = 'ac3' if '720p' in torrent.title else 'mp3'
+		media_object.video_resolution = 720 if '720p' in torrent.title else 480
+		media_object.video_codec      = 'h264' if 'x264' in torrent.title else 'xvid'
+		media_object.add(PartObject(key=Callback(play_func, url=torrent.url, magnet=torrent.magnet)))
+		media_objects.append(media_object)
+	except Exception as exception:
+		Log.Error('Error: {0}'.format(exception))
+		pass
 
 	if not media_objects:
 		raise Ex.MediaNotAvailable
