@@ -33,7 +33,7 @@ class YTSProvider(common.TorrentProvider):
                                                        json_item['MovieUrl'])
 
     def movies_get_specific_torrents(self, movie_info, torrent_infos):
-        imdb_id = tmdb.get_imdb_id_from_title(movie_info.title, movie_info.year)
+        imdb_id = tmdb.get_movie_imdb_id_from_title(movie_info.title, movie_info.year)
 
         json_query = imdb_id if imdb_id else movie_info.title.replace('.', ' ').replace('-', ' ')
         json_url   = YTS + '/api/list.json?limit=50&sort=seeds&keywords={0}'.format(String.Quote(json_query))
@@ -69,7 +69,7 @@ class YTSProvider(common.TorrentProvider):
 ################################################################################
 def MetadataObjectForURL(url):
     metadata_object = MovieObject()
-    tmdb.fill_metadata_object(metadata_object, get_imdb_id(url))
+    tmdb.fill_movie_metadata_object(get_imdb_id(url), metadata_object)
     return metadata_object
 
 ################################################################################

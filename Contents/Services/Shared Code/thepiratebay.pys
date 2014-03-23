@@ -23,7 +23,7 @@ class ThePirateBayProvider(common.TorrentProvider):
         self.parse_result_page(THEPIRATEBAY + '/search/{0}/0/7/207'.format(String.Quote(query)), torrent_infos)
 
     def movies_get_specific_torrents(self, movie_info, torrent_infos):
-        imdb_id = tmdb.get_imdb_id_from_title(movie_info.title, movie_info.year)
+        imdb_id = tmdb.get_movie_imdb_id_from_title(movie_info.title, movie_info.year)
         query   = imdb_id if imdb_id else movie_info.title
         self.parse_result_page(THEPIRATEBAY + '/search/{0}/0/7/200'.format(String.Quote(query)), torrent_infos, movie_info.key)
 

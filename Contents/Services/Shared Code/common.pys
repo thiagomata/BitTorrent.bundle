@@ -8,6 +8,7 @@ PREFIX = '/video/bittorrent'
 
 RE_MAGNET_INFO_HASH = re.compile('xt=urn:btih:([a-zA-Z0-9]+)')
 RE_MOVIE_TITLE      = re.compile('(.+)\s+(\(|\[)?(\d{4})(\)|\])?\s+(.+)')
+RE_TVSHOW_TITLE     = re.compile('(.+)\s+S?(\d{1,})(E|x)(\d{2,})?\s+(.+)')
 
 ################################################################################
 class TorrentInfo:
@@ -69,9 +70,9 @@ class TorrentProvider:
 
             movie_info = movies.MovieInfo(metadata_object.title)
             if movie_info.tmdb_id:
-                tmdb.fill_metadata_object(metadata_object, movie_info.tmdb_id)
+                tmdb.fill_movie_metadata_object(movie_info.tmdb_id, metadata_object)
             elif 'imdb_id' in torrent_info.data:
-                tmdb.fill_metadata_object(metadata_object, torrent_info.data['imdb_id'])
+                tmdb.fill_movie_metadata_object(torrent_info.data['imdb_id'], metadata_object)
             
             metadata_object.summary = '{0}\nSeeders: {1}, Leechers: {2}\n\n{3}'.format(torrent_info.release, torrent_info.seeders, torrent_info.leechers, metadata_object.summary)
 

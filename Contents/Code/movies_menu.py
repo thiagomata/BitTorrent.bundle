@@ -64,7 +64,7 @@ def movie(movie_info):
         movie_object.summary = seeders_leechers_line
 
         if movie_info.tmdb_id:
-            SharedCodeService.tmdb.fill_metadata_object(movie_object, movie_info.tmdb_id)
+            SharedCodeService.tmdb.fill_movie_metadata_object(movie_info.tmdb_id, movie_object)
             movie_object.title = torrent_info.release
 
             if seeders_leechers_line != movie_object.summary:
@@ -106,7 +106,7 @@ def parse_movie_infos(object_container, movie_infos):
         directory_object.title   = movie_info.title
 
         if movie_info.tmdb_id:
-            SharedCodeService.tmdb.fill_metadata_object(directory_object, movie_info.tmdb_id)
+            SharedCodeService.tmdb.fill_movie_metadata_object(movie_info.tmdb_id, directory_object)
 
         directory_object.key = Callback(movie, movie_info=movie_info.to_dict())
         object_container.add(directory_object)

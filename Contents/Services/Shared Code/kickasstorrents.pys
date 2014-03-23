@@ -12,10 +12,12 @@ class KickassTorrentsProvider(common.TorrentProvider):
     # ANIME
     ############################################################################
     def anime_get_popular_torrents(self, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/anime/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/anime/1/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/anime/2/?field=seeders&sorder=desc&rss=1', torrent_infos)
 
     def anime_search(self, query, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Aanime%20{0}/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Aanime%20{0}/1/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Aanime%20{0}/2/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
 
     def anime_get_specific_torrents(self, movie_info, torrent_infos):
         pass
@@ -24,24 +26,29 @@ class KickassTorrentsProvider(common.TorrentProvider):
     # MOVIES
     ############################################################################
     def movies_get_popular_torrents(self, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/movies/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/movies/1/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/movies/2/?field=seeders&sorder=desc&rss=1', torrent_infos)
 
     def movies_search(self, query, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Amovies%20{0}/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Amovies%20{0}/1/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%3Amovies%20{0}/2/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
 
     def movies_get_specific_torrents(self, movie_info, torrent_infos):
-        imdb_id = tmdb.get_imdb_id_from_title(movie_info.title, movie_info.year)
+        imdb_id = tmdb.get_movie_imdb_id_from_title(movie_info.title, movie_info.year)
         query   = 'imdb:{0}'.format(imdb_id[2:]) if imdb_id else movie_info.title.replace('.', ' ').replace('-', ' ')
-        self.parse_result_page(KICKASSTORRENTS + '/usearch/{0}/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos, movie_info.key)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/{0}/1/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos, movie_info.key)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/{0}/2/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos, movie_info.key)
 
     ############################################################################
     # TVSHOWS
     ############################################################################
     def tvshows_get_popular_torrents(self, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/tv/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/tv/1/?field=seeders&sorder=desc&rss=1', torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/tv/2/?field=seeders&sorder=desc&rss=1', torrent_infos)
 
     def tvshows_search(self, query, torrent_infos):
-        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%tv%20{0}/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%tv%20{0}/1/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
+        self.parse_result_page(KICKASSTORRENTS + '/usearch/category%tv%20{0}/2/?field=seeders&sorder=desc&rss=1'.format(String.Quote(query)), torrent_infos)
 
     def tvshows_get_specific_torrents(self, movie_info, torrent_infos):
         pass

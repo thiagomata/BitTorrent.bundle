@@ -13,14 +13,21 @@ def get_config():
 
 ###############################################################################
 @decorators.memoized
-def get_data(movie_id):
+def get_movie_data(movie_id):
     json_url  = 'http://api.themoviedb.org/3/movie/{0}?append_to_response=credits&api_key={1}'.format(movie_id, API_KEY)
     json_data = JSON.ObjectFromURL(json_url, cacheTime=CACHE_1WEEK)
     return json_data
 
 ###############################################################################
 @decorators.memoized
-def get_tmdb_id_from_title(movie_title, movie_year):
+def get_tvshow_data(tvshow_id):
+    json_url  = 'http://api.themoviedb.org/3/tv/{0}?append_to_response=credits&api_key={1}'.format(tvshow_id, API_KEY)
+    json_data = JSON.ObjectFromURL(json_url, cacheTime=CACHE_1WEEK)
+    return json_data
+
+###############################################################################
+@decorators.memoized
+def get_movie_tmdb_id_from_title(movie_title, movie_year):
     try:
         if movie_title and movie_year:
             json_url  = 'http://api.themoviedb.org/3/search/movie?query={0}&year={1}&api_key={2}'.format(String.Quote(movie_title), movie_year, API_KEY)
@@ -34,10 +41,30 @@ def get_tmdb_id_from_title(movie_title, movie_year):
 
 ###############################################################################
 @decorators.memoized
-def get_imdb_id_from_title(movie_title, movie_year):
-    tmdb_id, movie_title = get_tmdb_id_from_title(movie_title, movie_year)
+def get_tvshow_tmdb_id_from_title(tvshow_title):
+    try:
+        if tvshow_title:
+            json_url  = 'http://api.themoviedb.org/3/search/tv?query={0}&api_key={1}'.format(String.Quote(tvshow_title), API_KEY)
+            json_data = JSON.ObjectFromURL(json_url, cacheTime=CACHE_1WEEK)
+
+            best_result = None
+            for json_result in json_data['results']:
+                if not best_result or json_result['popularity'] > best_result['popularity']:
+                    best_result = json_result
+
+            return (best_result['id'], best_result['name'])
+    except:
+        pass
+
+    #Log.Error('[BitTorrent][tmdb] Failed to determine tmdb_id for {0}'.format(tvshow_title))
+    return (None, tvshow_title)
+
+###############################################################################
+@decorators.memoized
+def get_movie_imdb_id_from_title(movie_title, movie_year):
+    tmdb_id, movie_title = get_movie_tmdb_id_from_title(movie_title, movie_year)
     if tmdb_id:
-        return get_data(tmdb_id)['imdb_id']
+        return get_movie_data(tmdb_id)['imdb_id']
 
     #Log.Error('[BitTorrent][tmdb] Failed to determine imdb_id for {0} ({1})'.format(movie_title, movie_year))
     return None
@@ -46,56 +73,26 @@ def get_imdb_id_from_title(movie_title, movie_year):
 @decorators.memoized
 def get_movie_metadata(movie_id):
     try:
-        movie_data = get_data(movie_id)
+        movie_data = get_movie_data(movie_id)
     except Exception as exception:
         Log.Error('[BitTorrent][tmdb] Unhandled exception: {0}'.format(exception))
         return
 
-    movie_metadata = {}
-
-    try:
-        movie_metadata['duration'] = int(movie_data['runtime']) * 60 * 1000
-        movie_metadata['title']    = movie_data['title']
-        movie_metadata['tagline']  = movie_data['tagline']
-        movie_metadata['summary']  = movie_data['overview']
-        movie_metadata['rating']   = movie_data['vote_average']
-        movie_metadata['thumb']    = get_config()['images']['base_url'] + 'original' + movie_data['poster_path']
-        movie_metadata['art']      = get_config()['images']['base_url'] + 'original' + movie_data['backdrop_path']
-    except:
-        pass
+    movie_metadata             = get_common_metadata(movie_data)
+    movie_metadata['title']    = movie_data['title']
+    movie_metadata['duration'] = int(movie_data['runtime']) * 60 * 1000
+    movie_metadata['tagline']  = movie_data['tagline']
 
     try:
         movie_metadata['originally_available_at'] = Datetime.ParseDate(movie_data['release_date']).date()
         movie_metadata['year']                    = movie_metadata['originally_available_at']
     except:
         pass
-    
+
     try:
         movie_metadata['studio'] = movie_data['production_companies'][0]['name'].strip()
     except:
         pass
-
-    movie_metadata['genres'] = []
-    for genre in movie_data['genres']:
-        movie_metadata['genres'].append(genre['name'].strip())
-
-    movie_metadata['directors'] = []
-    movie_metadata['writers']   = []
-    movie_metadata['producers'] = []
-    for member in movie_data['credits']['crew']:
-        if member['job'] == 'Director':
-            movie_metadata['directors'].append(member['name'])
-        elif member['job'] in ('Writer', 'Screenplay'):
-            movie_metadata['writers'].append(member['name'])
-        elif member['job'] == 'Producer':
-            movie_metadata['producers'].append(member['name'])
-
-    movie_metadata['roles'] = []
-    for member in sorted(movie_data['credits']['cast'], key=lambda k: k['order']):
-        role = { 'character': member['character'], 'name': member['name'], 'photo': None }
-        if member['profile_path']:
-            role['photo'] = get_config()['images']['base_url'] + 'original' + member['profile_path']
-        movie_metadata['roles'].append(role)
 
     movie_metadata['countries'] = []
     if 'production_countries' in movie_data:
@@ -106,83 +103,171 @@ def get_movie_metadata(movie_id):
     return movie_metadata
 
 ###############################################################################
-def fill_metadata_object(metadata_object, imdb_id):
-    movie_metadata = get_movie_metadata(imdb_id)
-    if not movie_metadata:
+def get_tvshow_metadata(tvshow_id):
+    try:
+        tvshow_data = get_tvshow_data(tvshow_id)
+    except Exception as exception:
+        Log.Error('[BitTorrent][tmdb] Unhandled exception: {0}'.format(exception))
+        return
+
+    tvshow_metadata             = get_common_metadata(tvshow_data)
+    tvshow_metadata['title']    = tvshow_data['name']
+
+    try:
+        tvshow_metadata['duration'] = tvshow_data['episode_run_time'][0]
+    except:
+        pass
+
+    try:
+        tvshow_metadata['episode_count'] = tvshow_data['number_of_episodes']
+    except:
+        pass
+
+    try:
+        tvshow_metadata['originally_available_at'] = Datetime.ParseDate(tvshow_data['first_air_date']).date()
+        tvshow_metadata['year']                    = tvshow_metadata['originally_available_at']
+    except:
+        pass
+
+    try:
+        tvshow_metadata['studio'] = tvshow_data['networks'][0]['name'].strip()
+    except:
+        pass
+
+    try:
+        tvshow_metadata['countries'].append(tvshow_data['origin_country'])
+    except:
+        pass
+
+    return tvshow_metadata
+
+###############################################################################
+def get_common_metadata(data):
+    metadata = {}
+
+    try:
+        metadata['summary']  = data['overview']
+        metadata['rating']   = data['vote_average']
+        metadata['thumb']    = get_config()['images']['base_url'] + 'original' + data['poster_path']
+        metadata['art']      = get_config()['images']['base_url'] + 'original' + data['backdrop_path']
+    except:
+        pass
+
+
+    metadata['genres'] = []
+    for genre in data['genres']:
+        metadata['genres'].append(genre['name'].strip())
+
+    metadata['directors'] = []
+    metadata['writers']   = []
+    metadata['producers'] = []
+    for member in data['credits']['crew']:
+        if member['job'] == 'Director':
+            metadata['directors'].append(member['name'])
+        elif member['job'] in ('Writer', 'Screenplay'):
+            metadata['writers'].append(member['name'])
+        elif member['job'] == 'Producer':
+            metadata['producers'].append(member['name'])
+
+    metadata['roles'] = []
+    for member in sorted(data['credits']['cast'], key=lambda k: k['order']):
+        role = { 'character': member['character'], 'name': member['name'], 'photo': None }
+        if member['profile_path']:
+            role['photo'] = get_config()['images']['base_url'] + 'original' + member['profile_path']
+        metadata['roles'].append(role)
+
+    return metadata
+
+###############################################################################
+def fill_movie_metadata_object(movie_id, metadata_object):
+    return fill_common_metadata_object(get_movie_metadata(movie_id), metadata_object)
+
+###############################################################################
+def fill_tvshow_metadata_object(tvshow_id, metadata_object):
+    return fill_common_metadata_object(get_tvshow_metadata(tvshow_id), metadata_object)
+
+###############################################################################
+def fill_common_metadata_object(metadata, metadata_object):
+    if not metadata:
         return
 
     try:
-        metadata_object.duration = movie_metadata['duration']
+        metadata_object.duration = metadata['duration']
     except:
         pass
     
     try:
-        metadata_object.title = movie_metadata['title']
+        metadata_object.title = metadata['title']
     except:
         pass
 
     try:
-        metadata_object.tagline = movie_metadata['tagline']
+        metadata_object.tagline = metadata['tagline']
     except:
         pass
 
     try:
-        metadata_object.summary = movie_metadata['summary']
+        metadata_object.summary = metadata['summary']
     except:
         pass
 
     try:
-        metadata_object.rating = movie_metadata['rating']
+        metadata_object.rating = metadata['rating']
     except:
         pass
 
     try:
-        metadata_object.thumb = movie_metadata['thumb']
+        metadata_object.thumb = metadata['thumb']
     except:
         pass
 
     try:
-        metadata_object.art = movie_metadata['art']
+        metadata_object.art = metadata['art']
     except:
         pass
     
     try:
-        metadata_object.originally_available_at = movie_metadata['originally_available_at']
-        metadata_object.year                    = metadata_object.originally_available_at.year
+        metadata_object.originally_available_at = metadata['originally_available_at']
+        metadata_object.year                    = metadata['year']
     except:
         pass
 
     try:
-        metadata_object.studio = movie_metadata['studio']
+        metadata_object.studio = metadata['studio']
     except:
         pass
 
     try:
-        for genre in movie_metadata['genres']:
+        metadata_object.episode_count = metadata['episode_count']
+    except:
+        pass
+
+    try:
+        for genre in metadata['genres']:
             metadata_object.genres.add(genre)
     except:
         pass
 
     try:
-        for director in movie_metadata['directors']:
+        for director in metadata['directors']:
             metadata_object.directors.add(director)
     except:
         pass
 
     try:
-        for writer in movie_metadata['writers']:
+        for writer in metadata['writers']:
             metadata_object.writers.add(writer)
     except:
         pass
 
     try:
-        for producer in movie_metadata['producers']:
+        for producer in metadata['producers']:
             metadata_object.producers.add(producer)
     except:
         pass
 
     try:
-        for role in movie_metadata['roles']:
+        for role in metadata['roles']:
             new_role       = metadata_object.roles.new()
             new_role.actor = role['character']
             new_role.role  = role['name']
@@ -191,7 +276,7 @@ def fill_metadata_object(metadata_object, imdb_id):
         pass
 
     try:
-        for country in movie_metadata['countries']:
+        for country in metadata['countries']:
             metadata_object.countries.add(country)
     except:
         pass
