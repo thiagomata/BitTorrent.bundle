@@ -15,21 +15,20 @@ def menu():
 ################################################################################
 @route(SharedCodeService.common.PREFIX + '/' + SUBPREFIX + '/popular', per_page=int, movie_count=int)
 def popular(per_page, movie_count=0):
-    torrent_infos = []
-
-    torrent_provider = SharedCodeService.metaprovider.MetaProvider()
-    torrent_provider.movies_get_popular_torrents(torrent_infos)
-
-    movie_infos = []
-    movie_count = fill_movie_list(torrent_infos, movie_count, per_page, movie_infos)
+    movie_infos = SharedCodeService.trakt.movies_get_trending()
 
     object_container = ObjectContainer(title2='Popular')
-    parse_movie_infos(object_container, movie_infos)
-    object_container.add(NextPageObject(key=Callback(popular, per_page=per_page, movie_count=movie_count), title="More..."))
+    parse_movie_infos(movie_infos, object_container, per_page, movie_count)
+    
+    movie_count = movie_count + len(object_container)
+
+    if movie_count < len(movie_infos):
+        object_container.add(NextPageObject(key=Callback(popular, per_page=per_page, movie_count=movie_count), title="More..."))
+    
     return object_container
 
 ################################################################################
-@route(SharedCodeService.common.PREFIX + '/' + SUBPREFIX + '/search')
+@route(SharedCodeService.common.PREFIX + '/' + SUBPREFIX + '/search', per_page=int, movie_count=int)
 def search(query, per_page, movie_count=0):
     torrent_infos = []
 
@@ -37,12 +36,22 @@ def search(query, per_page, movie_count=0):
     torrent_provider.movies_search(query, torrent_infos)
 
     movie_infos = []
-    movie_count = fill_movie_list(torrent_infos, movie_count, per_page, movie_infos)
+    fill_movie_list(torrent_infos, movie_count, per_page, movie_infos)
 
     object_container = ObjectContainer(title2='Search')
-    parse_movie_infos(object_container, movie_infos)
-    #object_container.add(NextPageObject(key=Callback(search, per_page=per_page, movie_count=movie_count), title="More..."))
+    parse_movie_infos(movie_infos, object_container, per_page, movie_count)
+    
+    movie_count = movie_count + len(object_container)
+
+    if movie_count < len(movie_infos):
+        object_container.add(NextPageObject(key=Callback(popular, per_page=per_page, movie_count=movie_count), title="More..."))
+    
     return object_container
+
+    # object_container = ObjectContainer(title2='Search')
+    # parse_movie_infos(object_container, movie_infos)
+    # #object_container.add(NextPageObject(key=Callback(search, per_page=per_page, movie_count=movie_count), title="More..."))
+    # return object_container
 
 ################################################################################
 @route(SharedCodeService.common.PREFIX + '/' + SUBPREFIX + '/movie', movie_info=dict)
@@ -100,14 +109,14 @@ def fill_movie_list(torrent_infos, cur_movie_count, max_movie_count, movie_infos
     return len(movie_infos_skip_keys) + len(movie_infos_keys)
 
 ################################################################################
-def parse_movie_infos(object_container, movie_infos):
-    for movie_info in movie_infos:
-        directory_object         = DirectoryObject()
-        directory_object.title   = movie_info.title
-
-        if movie_info.tmdb_id:
-            SharedCodeService.tmdb.fill_metadata_object(directory_object, movie_info.tmdb_id)
-
+def parse_movie_infos(movie_infos, object_container, per_page, movie_count):
+    for movie_info in movie_infos[movie_count:]:
+        directory_object     = DirectoryObject()
         directory_object.key = Callback(movie, movie_info=movie_info.to_dict())
+
+        SharedCodeService.tmdb.fill_metadata_object(directory_object, movie_info.tmdb_id)
+        
         object_container.add(directory_object)
 
+        if len(object_container) == per_page:
+            break

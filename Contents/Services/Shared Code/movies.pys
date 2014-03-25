@@ -20,17 +20,26 @@ class MovieInfo:
 
     def to_dict(self):
         return { 
+                    'tmdb_id':  self.tmdb_id,
                     'title':    self.title,
                     'year':     self.year,
-                    'tmdb_id':  self.tmdb_id,
                     'key':      self.key
                }
 
     @staticmethod
+    def from_tmdb_id(tmdb_id, title, year):
+        result         = MovieInfo()
+        result.tmdb_id = tmdb_id
+        result.title   = title
+        result.year    = year
+        result.key     = tmdb_id
+        return result
+
+    @staticmethod
     def from_dict(dict):
         result          = MovieInfo()
+        result.tmdb_id  = dict['tmdb_id']
         result.title    = dict['title']
         result.year     = dict['year']
-        result.tmdb_id  = dict['tmdb_id']
         result.key      = dict['key']
         return result

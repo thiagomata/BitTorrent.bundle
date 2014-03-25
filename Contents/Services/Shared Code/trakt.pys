@@ -1,0 +1,31 @@
+###############################################################################
+import decorators
+import movies
+
+###############################################################################
+TRAKT   = 'http://api.trakt.tv'
+API_KEY = '480555541c12a378b1aac15054a95698'
+
+###############################################################################
+@decorators.memoized
+def movies_get_trending():
+    json_url  = TRAKT + '/movies/trending.json/{0}'.format(API_KEY)
+    json_data = JSON.ObjectFromURL(json_url, cacheTime=CACHE_1HOUR)
+
+    movie_infos = []
+    for json_item in json_data:
+        movie_info = movies.MovieInfo.from_tmdb_id(json_item['tmdb_id'], json_item['title'], json_item['year'])
+        movie_infos.append(movie_info)
+    return movie_infos
+
+###############################################################################
+@decorators.memoized
+def movies_search(query):
+    json_url  = TRAKT + '/search/movies.json/{0}?query={1}'.format(API_KEY, String.Quote(query))
+    json_data = JSON.ObjectFromURL(json_url, cacheTime=CACHE_1HOUR)
+
+    movie_infos = []
+    for json_item in json_data:
+        movie_info = movies.MovieInfo.from_tmdb_id(json_item['tmdb_id'], json_item['title'], json_item['year'])
+        movie_infos.append(movie_info)
+    return movie_infos
